@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 
 // --- Types ---
 type Task = {
@@ -445,12 +445,14 @@ function Timeline({
   pxPerSecond,
   applyChronoSpeed,
   sortMode,
+  playheadTime,
 }: {
   tasks: Task[];
   seconds: number;
   pxPerSecond: number;
   applyChronoSpeed: boolean;
   sortMode: SortMode;
+  playheadTime: number;
 }) {
   const groups = useMemo(() => groupByName(tasks), [tasks]);
   const names = Object.keys(groups);
@@ -480,6 +482,40 @@ function Timeline({
       <svg width={width} height={height} className="block">
         {/* Background */}
         <rect x={0} y={0} width={width} height={height} fill="white" />
+
+        {/* Playhead line */}
+        {playheadTime >= 0 && (
+          <g>
+            <line
+              x1={leftGutter + playheadTime * pxPerSecond}
+              y1={0}
+              x2={leftGutter + playheadTime * pxPerSecond}
+              y2={height}
+              stroke="#ef4444"
+              strokeWidth={2}
+              strokeDasharray="4 2"
+            />
+            <rect
+              x={leftGutter + playheadTime * pxPerSecond - 24}
+              y={0}
+              width={48}
+              height={16}
+              rx={4}
+              fill="#ef4444"
+              opacity={0.9}
+            />
+            <text
+              x={leftGutter + playheadTime * pxPerSecond}
+              y={12}
+              textAnchor="middle"
+              fontSize={10}
+              fill="#fff"
+              style={{ fontWeight: 600 }}
+            >
+              {formatSec(Math.min(playheadTime, seconds))}
+            </text>
+          </g>
+        )}
 
         {/* Minor grid lines */}
         {Array.from({ length: Math.floor(seconds / gridMinor) + 1 }).map((_, i) => {
@@ -594,6 +630,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [applyChrono, setApplyChrono] = useState<boolean>(true);
   const [sortMode, setSortMode] = useState<SortMode>("alpha");
+  // Playhead state
+  const [playheadTime, setPlayheadTime] = useState<number>(0);
+  const [playing, setPlaying] = useState<boolean>(false);
+  const [playSpeed, setPlaySpeed] = useState<number>(1); // multiplier
 
   // Local builds
   const [builds, setBuilds] = useState<BuildEntry[]>([]);
@@ -669,6 +709,39 @@ export default function App() {
     }
     return Object.keys(durations).sort();
   }, [tasks, durations, sortMode]);
+
+  // Auto advance playhead
+  useEffect(() => {
+    if (!playing) return;
+    let raf: number;
+    let last = performance.now();
+    const tick = (ts: number) => {
+      const dt = (ts - last) / 1000;
+      last = ts;
+      setPlayheadTime((p) => {
+        const next = p + dt * playSpeed;
+        if (next >= seconds) {
+          setPlaying(false);
+          return seconds;
+        }
+        return next;
+      });
+      if (playing) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, playSpeed, seconds]);
+
+  // Clamp playhead if seconds shortened
+  useEffect(() => {
+    setPlayheadTime((p) => (p > seconds ? seconds : p));
+  }, [seconds]);
+
+  const handleTogglePlay = () => setPlaying((p) => !p);
+  const handleResetPlayhead = () => {
+    setPlaying(false);
+    setPlayheadTime(0);
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 p-6">
@@ -806,9 +879,54 @@ export default function App() {
                   <option value="firstStart">First start time</option>
                 </select>
               </label>
-              <div className="text-xs text-neutral-500">
-                Tip: If your bars look too long/short, tweak durations on the right.
+              {/* Playhead controls */}
+              <div className="flex items-center gap-2 flex-wrap text-sm">
+                <button
+                  onClick={handleTogglePlay}
+                  className="px-3 py-1 rounded-xl border hover:bg-neutral-50"
+                >
+                  {playing ? "Pause" : playheadTime === 0 || playheadTime >= seconds ? "Play" : "Resume"}
+                </button>
+                <button
+                  onClick={handleResetPlayhead}
+                  className="px-3 py-1 rounded-xl border hover:bg-neutral-50"
+                  disabled={playheadTime === 0 && !playing}
+                >
+                  Reset
+                </button>
+                <span className="text-neutral-600">At {formatSec(playheadTime)}</span>
+                <label className="inline-flex items-center gap-1">
+                  <span>Speed</span>
+                  <select
+                    className="rounded-md border px-2 py-1"
+                    value={playSpeed}
+                    onChange={(e) => setPlaySpeed(parseFloat(e.target.value))}
+                  >
+                    <option value={0.5}>0.5x</option>
+                    <option value={1}>1x</option>
+                    <option value={1.5}>1.5x</option>
+                    <option value={2}>2x</option>
+                    <option value={3}>3x</option>
+                  </select>
+                </label>
+                <button
+                  onClick={() => setPlayheadTime((t) => Math.max(0, t - 5))}
+                  className="px-2 py-1 rounded-lg border hover:bg-neutral-50"
+                >
+                  -5s
+                </button>
+                <button
+                  onClick={() => setPlayheadTime((t) => Math.min(seconds, t + 5))}
+                  className="px-2 py-1 rounded-lg border hover:bg-neutral-50"
+                >
+                  +5s
+                </button>
               </div>
+              <div className="text-xs text-neutral-500">Press Play to auto-advance the red playhead line across the timeline.</div>
+              <div className="text-xs text-neutral-500">Speed adjusts real-time progression. Reaching the end stops playback.</div>
+              <div className="text-xs text-neutral-500">Use -5s / +5s to nudge.</div>
+              <div className="text-xs text-neutral-500">(Future: auto-scroll & highlighting current tasks.)</div>
+              <div className="text-xs text-neutral-500 mt-1">Tip: tweak speed for faster review.</div>
             </div>
           </div>
 
@@ -880,6 +998,7 @@ export default function App() {
             pxPerSecond={pxPerSecond}
             applyChronoSpeed={applyChrono}
             sortMode={sortMode}
+            playheadTime={playheadTime}
           />
         </div>
 
