@@ -132,6 +132,40 @@ const DEFAULT_DURATIONS: DurationMap = {
   "Shadow Stride": 100,
   "Warp Gate Research": 100,
 
+  // --- Terran upgrades (common ones) ---
+  Stimpack: 100, // was 121, corrected to Liquipedia
+  "Combat Shield": 79,
+  "Concussive Shells": 43,
+  // Infantry weapon/armor upgrades
+  "Infantry Weapons Level 1": 114,
+  "Infantry Weapons Level 2": 136,
+  "Infantry Weapons Level 3": 164,
+  "Infantry Armor Level 1": 114,
+  "Infantry Armor Level 2": 136,
+  "Infantry Armor Level 3": 164,
+  // Vehicle weapon/armor upgrades  
+  "Vehicle Weapons Level 1": 114,
+  "Vehicle Weapons Level 2": 136,
+  "Vehicle Weapons Level 3": 164,
+  "Vehicle and Ship Plating Level 1": 114,
+  "Vehicle and Ship Plating Level 2": 136,
+  "Vehicle and Ship Plating Level 3": 164,
+  // Air weapon upgrades
+  "Ship Weapons Level 1": 114,
+  "Ship Weapons Level 2": 136,
+  "Ship Weapons Level 3": 164,
+  // Other common upgrades
+  "Cloaking Field": 79,
+  "Advanced Ballistics": 79,
+  "Hi-Sec Auto Tracking": 57,
+  "Hyperflight Rotors": 100,
+  "Hurricane Engines": 100,
+  "Caduceus Reactor": 50,
+  "Infernal Pre-Igniter": 100,
+  "Drilling Claws": 79,
+  "Smart Servos": 79,
+  "Neosteel Armor": 100,
+
   // Marker only
   "Chrono Boost": 0,
 
@@ -153,6 +187,25 @@ const DEFAULT_DURATIONS: DurationMap = {
   Raven: 43,
   Banshee: 43,
   Battlecruiser: 64,
+
+  // --- Terran buildings (Liquipedia LotV — Faster) ---
+  "Command Center": 71,
+  "Orbital Command": 25, // upgrade from Command Center
+  "Planetary Fortress": 36, // upgrade from Command Center
+  "Supply Depot": 21,
+  Refinery: 21,
+  Barracks: 46,
+  "Engineering Bay": 25,
+  Bunker: 29,
+  "Missile Turret": 18,
+  "Sensor Tower": 18,
+  "Ghost Academy": 29,
+  Factory: 43,
+  Starport: 36,
+  Armory: 46,
+  "Fusion Core": 46,
+  "Tech Lab": 18,
+  Reactor: 36,
 
   // --- Zerg units (Liquipedia LotV — Faster) ---
   Drone: 12,
@@ -193,14 +246,44 @@ const DEFAULT_DURATIONS: DurationMap = {
   "Spine Crawler": 36,
   "Spore Crawler": 21,
   "Creep Tumor": 15,
+
+  // --- Zerg upgrades (common ones) ---
+  "Metabolic Boost": 79,
+  "Adrenal Glands": 100,
+  "Centrifugal Hooks": 79,
+  "Zerg Melee Weapons Level 1": 143,
+  "Zerg Melee Weapons Level 2": 171,
+  "Zerg Melee Weapons Level 3": 200,
+  "Zerg Missile Weapons Level 1": 143,
+  "Zerg Missile Weapons Level 2": 171,
+  "Zerg Missile Weapons Level 3": 200,
+  "Zerg Ground Armor Level 1": 143,
+  "Zerg Ground Armor Level 2": 171,
+  "Zerg Ground Armor Level 3": 200,
+  "Zerg Flyer Weapons Level 1": 143,
+  "Zerg Flyer Weapons Level 2": 171,
+  "Zerg Flyer Weapons Level 3": 200,
+  "Zerg Flyer Armor Level 1": 143,
+  "Zerg Flyer Armor Level 2": 171,
+  "Zerg Flyer Armor Level 3": 200,
 };
 
 // --- Categorization for coloring ---
 type Category = "infrastructure" | "production" | "static" | "upgradeBuilding" | "unit" | "other";
 
-const INFRA = new Set(["Pylon", "Assimilator", "Nexus", "Hatchery", "Lair", "Hive", "Extractor"]);
-const PRODUCTION = new Set(["Gateway", "Robotics Facility", "Stargate"]);
-const STATIC_DEF = new Set(["Shield Battery", "Photon Cannon", "Spine Crawler", "Spore Crawler"]);
+const INFRA = new Set([
+  "Pylon", "Assimilator", "Nexus", 
+  "Hatchery", "Lair", "Hive", "Extractor",
+  "Command Center", "Orbital Command", "Planetary Fortress", "Supply Depot", "Refinery"
+]);
+const PRODUCTION = new Set([
+  "Gateway", "Robotics Facility", "Stargate",
+  "Barracks", "Factory", "Starport"
+]);
+const STATIC_DEF = new Set([
+  "Shield Battery", "Photon Cannon", "Spine Crawler", "Spore Crawler",
+  "Bunker", "Missile Turret", "Sensor Tower"
+]);
 const UPGRADE_BLD = new Set([
   "Cybernetics",
   "Cybernetics Core",
@@ -210,6 +293,13 @@ const UPGRADE_BLD = new Set([
   "Dark Shrine",
   "Fleet Beacon",
   "Robotics Bay",
+  // Terran tech/upgrade structures
+  "Engineering Bay",
+  "Ghost Academy",
+  "Armory",
+  "Fusion Core",
+  "Tech Lab",
+  "Reactor",
   // Zerg tech/upgrade structures
   "Spawning Pool",
   "Roach Warren",
@@ -369,6 +459,47 @@ function normalizeName(input: string): string {
 
   const mShields = name.match(/^(?:Protoss\s+)?Shields?/i);
   if (mShields && lvl) return `Shields Level ${lvl}`;
+
+  // Terran upgrades (add some basic ones for common aliases)
+  if (/stimpack/i.test(name) || /stim.*pack/i.test(name)) return "Stimpack";
+  if (/combat.*shield/i.test(name)) return "Combat Shield";
+  if (/concussive.*shell/i.test(name)) return "Concussive Shells";
+  if (/cloaking.*field/i.test(name) || /banshee.*cloak/i.test(name)) return "Cloaking Field";
+  if (/advanced.*ballistics/i.test(name) || /liberator.*range/i.test(name)) return "Advanced Ballistics";
+  if (/hyperflight.*rotor/i.test(name) || /banshee.*speed/i.test(name)) return "Hyperflight Rotors";
+  if (/hurricane.*engine/i.test(name) || /cyclone.*speed/i.test(name)) return "Hurricane Engines";
+  if (/caduceus.*reactor/i.test(name) || /medivac.*energy/i.test(name)) return "Caduceus Reactor";
+
+  // Generic Terran weapon/armor upgrades
+  const mTerranWeap = name.match(/^(?:Terran\s+)?(Infantry|Vehicle|Ship)\s+(Weapons|Attacks?)/i);
+  if (mTerranWeap && lvl) return `${capFirst(mTerranWeap[1])} Weapons Level ${lvl}`;
+
+  const mTerranArmor = name.match(/^(?:Terran\s+)?(Infantry)\s+Armor/i);
+  if (mTerranArmor && lvl) return `${capFirst(mTerranArmor[1])} Armor Level ${lvl}`;
+
+  const mTerranVehicleArmor = name.match(/^(?:Terran\s+)?(Vehicle.*Ship|Mech)\s+(Plating|Armor)/i);
+  if (mTerranVehicleArmor && lvl) return `Vehicle and Ship Plating Level ${lvl}`;
+
+  // Zerg upgrades (add some basic ones for common aliases)
+  if (/metabolic.*boost/i.test(name) || /zergling.*speed/i.test(name)) return "Metabolic Boost";
+  if (/adrenal.*gland/i.test(name) || /zergling.*attack/i.test(name)) return "Adrenal Glands";
+  if (/centrifugal.*hook/i.test(name) || /baneling.*speed/i.test(name)) return "Centrifugal Hooks";
+
+  // Generic Zerg weapon/armor upgrades
+  const mZergWeap = name.match(/^(?:Zerg\s+)?(Ground|Air|Melee|Missile|Flyer)\s+(Weapons|Attacks?)/i);
+  if (mZergWeap && lvl) {
+    const type = mZergWeap[1].toLowerCase();
+    if (type === "ground" || type === "melee") return `Zerg Melee Weapons Level ${lvl}`;
+    if (type === "missile") return `Zerg Missile Weapons Level ${lvl}`;
+    if (type === "air" || type === "flyer") return `Zerg Flyer Weapons Level ${lvl}`;
+  }
+
+  const mZergArmor = name.match(/^(?:Zerg\s+)?(Ground|Air|Carapace|Flyer)\s+Armor/i);
+  if (mZergArmor && lvl) {
+    const type = mZergArmor[1].toLowerCase();
+    if (type === "ground" || type === "carapace") return `Zerg Ground Armor Level ${lvl}`;
+    if (type === "air" || type === "flyer") return `Zerg Flyer Armor Level ${lvl}`;
+  }
 
   // Nothing matched — return cleaned name
   return name;
@@ -598,8 +729,8 @@ function Timeline({
                       rx={8}
                       ry={8}
                       fill={fill}
-                      stroke={stroke}
-                      strokeWidth={boosted ? 2 : 0}
+                      stroke={boosted ? stroke : "#374151"}
+                      strokeWidth={boosted ? 2 : 0.5}
                       opacity={0.9}
                     />
                   </g>

@@ -1,0 +1,26 @@
+14  0:00  SCV
+14  0:12  SCV  
+14  0:17  Supply Depot
+15  0:24  SCV
+15  0:35  Barracks
+16  0:36  SCV
+16  0:48  SCV
+18  1:00  SCV
+18  1:12  Refinery
+19  1:21  Marine
+20  1:39  Marine
+21  1:50  Orbital Command
+22  1:57  Marine
+23  2:15  Marine
+24  2:33  Stimpack
+25  2:51  Marine
+26  3:09  Marine
+27  3:27  Engineering Bay
+28  3:45  Combat Shield
+29  4:03  Infantry Weapons Level 1
+30  4:21  Factory
+31  4:39  Starport
+32  4:57  Armory
+33  5:15  Vehicle Weapons Level 1
+34  5:33  Ship Weapons Level 1
+35  5:51  Vehicle and Ship Plating Level 1
